@@ -1,0 +1,3 @@
+demToyLineqGP_MultiConstr    A sigmoid example using multiple inequality constraints
+demToyLineqGP_Linear         A sigmoid example using linear inequality constraints
+demToyLineqGP_MultiConstr2D  A 2D example under boundedness and monotonicity constraints
