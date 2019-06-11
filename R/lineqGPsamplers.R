@@ -207,12 +207,11 @@ tmvrnorm.HMC <- function(object, nsim, control = list(burn.in = 1e2), ...) {
 #'         main = "Constrained samples using expontial tilting")
 #' abline(h = c(-1,1), lty = 2)
 #'
-#' @import TruncatedNormal
 #' @export
 tmvrnorm.ExpT <- function(object, nsim, control = NULL, ...) {
   tmvPar <- object
   # simulating samples using the package "TruncatedNormal" (Truncated Multivariate Normal)
   xi <- matrix(tmvPar$mu, nrow = nrow(tmvPar$Sigma), ncol = nsim) +
-    mvrandn(tmvPar$lb-tmvPar$mu, tmvPar$ub-tmvPar$mu, tmvPar$Sigma, nsim)
+    TruncatedNormal::mvrandn(tmvPar$lb-tmvPar$mu, tmvPar$ub-tmvPar$mu, tmvPar$Sigma, nsim)
   return(xi)
 }

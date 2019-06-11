@@ -41,7 +41,7 @@ lineqGPOptim <- function(model,
                          add.constr = FALSE,
                          mcmc.opts = list(probe = "Genz", nb.mcmc = 1e3),
                          max.trials = 10, ...) {
-  
+  model <- augment(model)
   if (!("parfixed" %in% names(opts)))
     opts$parfixed <- rep(FALSE, length(par))
   if (!("bounds.varnoise" %in% names(opts)))
@@ -263,7 +263,7 @@ logLikGrad <- function(par = model$kernParam$par, model,
 
 #' @title Log-Constrained-Likelihood of a Gaussian Process.
 #' @description Compute the negative log-constrained-likelihood of a Gaussian Process
-#' conditionally to the inequality constraints (Lopez-Lopera et al., 2017).
+#' conditionally to the inequality constraints (Lopez-Lopera et al., 2018).
 #' @param par the values of the covariance parameters.
 #' @param model an object with \code{"lineqGP"} S3 class.
 #' @param parfixed not used.
@@ -275,16 +275,16 @@ logLikGrad <- function(par = model$kernParam$par, model,
 #' @param estim.varnoise If \code{true}, a noise variance is estimated.
 #' @return The value of the negative log-constrained-likelihood.
 #' @details Orthant multinormal probabilities are estimated according to
-#' (Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2017).
+#' (Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2018).
 #'
 #' @seealso \code{\link{constrlogLikGrad}}, \code{\link{logLikFun}},
 #'          \code{\link{logLikGrad}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @references Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2018),
 #' "Maximum likelihood estimation for Gaussian processes under inequality constraints".
@@ -303,7 +303,8 @@ logLikGrad <- function(par = model$kernParam$par, model,
 #' 79(1):125-148.
 #' \href{https://rss.onlinelibrary.wiley.com/doi/pdf/10.1111/rssb.12162}{[link]}
 #'
-#' @import TruncatedNormal mvtnorm
+#' @importFrom TruncatedNormal mvrandn mvNcdf
+#' @import mvtnorm
 #' @export
 constrlogLikFun <- function(par = model$kernParam$par, model, parfixed = NULL,
                             mcmc.opts = list(probe = c("Genz"), nb.mcmc = 1e3),
@@ -373,21 +374,21 @@ constrlogLikFun <- function(par = model$kernParam$par, model, parfixed = NULL,
   set.seed(7)
   switch(mcmc.opts$probe,
          Genz = {
-           f <- f - log(pmvnorm(model$lb, model$ub,
+           f <- f - log(mvtnorm::pmvnorm(model$lb, model$ub,
                                 as.vector(mu.eta), sigma = Sigma.eta)[[1]]) +
-             log(pmvnorm(model$lb, model$ub,
+             log(mvtnorm::pmvnorm(model$lb, model$ub,
                          rep(0, nrow(Gamma.eta)), sigma = Gamma.eta)[[1]])
          }, ExpT = {
-           f <- f - log(mvNcdf(model$lb-mu.eta, model$ub-mu.eta,
+           f <- f - log(TruncatedNormal::mvNcdf(model$lb-mu.eta, model$ub-mu.eta,
                                Sigma.eta, mcmc.opts$nb.mcmc)$prob) +
-             log(mvNcdf(model$lb, model$ub, Gamma.eta, mcmc.opts$nb.mcmc)$prob)
+             log(TruncatedNormal::mvNcdf(model$lb, model$ub, Gamma.eta, mcmc.opts$nb.mcmc)$prob)
          })
   return(f)
 }
 
 #' @title  Numerical Gradient of the Log-Constrained-Likelihood of a Gaussian Process.
 #' @description Compute the gradient numerically of the negative log-constrained-likelihood of a Gaussian Process
-#' conditionally to the inequality constraints (Lopez-Lopera et al., 2017).
+#' conditionally to the inequality constraints (Lopez-Lopera et al., 2018).
 #' @param par the values of the covariance parameters.
 #' @param model an object with class \code{lineqGP}.
 #' @param parfixed indices of fixed parameters to do not be optimised.
@@ -407,10 +408,10 @@ constrlogLikFun <- function(par = model$kernParam$par, model, parfixed = NULL,
 #' the gradient is implemented numerically based on \code{\link{nl.grad}}.
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @references Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2018),
 #' "Maximum likelihood estimation for Gaussian processes under inequality constraints".

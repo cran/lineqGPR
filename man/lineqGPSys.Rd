@@ -51,10 +51,10 @@ linSys2
 
 }
 \references{
-Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 "Finite-dimensional Gaussian approximation with linear inequality constraints".
-\emph{ArXiv e-prints}
-\href{https://arxiv.org/abs/1710.07453}{[link]}
+\emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+\href{https://doi.org/10.1137/17M1153157}{[link]}
 }
 \seealso{
 \code{\link{bounds2lineqSys}}

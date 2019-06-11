@@ -10,10 +10,10 @@
 #' in future versions for higher dimensions.
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' Maatouk, H. and Bay, X. (2017),
 #' "Gaussian process emulators for computer experiments with inequality constraints".
@@ -94,10 +94,10 @@ basisCompute.lineqGP <- function(x, u, d = 1) {
 #' @seealso \code{\link{bounds2lineqSys}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @examples
 #' linSys1 <- lineqGPSys(m = 5, constrType = "boundedness", l = 0, u = 1, lineqSysType = "twosides")
@@ -191,10 +191,10 @@ lineqGPSys <- function(m = nrow(A),
 #'
 #' @seealso \code{\link{augment.lineqGP}}, \code{\link{predict.lineqGP}}, \code{\link{simulate.lineqGP}}
 #' @author A. F. Lopez-Lopera.
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -264,10 +264,10 @@ create.lineqGP <- function(x, y, constrType) {
 #'          \code{\link{simulate.lineqGP}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -410,10 +410,10 @@ augment.lineqGP <- function(x, ...) {
 #'          \code{\link{simulate.lineqGP}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -509,10 +509,10 @@ predict.lineqGP <- function(object, xtest, ...) {
 #'          \code{\link{predict.lineqGP}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{ArXiv e-prints}
-#' \href{https://arxiv.org/abs/1710.07453}{[link]}
+#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+#' \href{https://doi.org/10.1137/17M1153157}{[link]}
 #'
 #' @examples
 #' # creating the model

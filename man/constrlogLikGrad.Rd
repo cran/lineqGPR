@@ -28,7 +28,7 @@ The gradient of the negative log-constrained-likelihood.
 }
 \description{
 Compute the gradient numerically of the negative log-constrained-likelihood of a Gaussian Process
-conditionally to the inequality constraints (Lopez-Lopera et al., 2017).
+conditionally to the inequality constraints (Lopez-Lopera et al., 2018).
 }
 \details{
 Orthant multinormal probabilities are estimated via (Genz, 1992; Botev, 2017).
@@ -40,10 +40,10 @@ the gradient is implemented numerically based on \code{\link{nl.grad}}.
 }
 
 \references{
-Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
 "Finite-dimensional Gaussian approximation with linear inequality constraints".
-\emph{ArXiv e-prints}
-\href{https://arxiv.org/abs/1710.07453}{[link]}
+\emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+\href{https://doi.org/10.1137/17M1153157}{[link]}
 
 Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2018),
 "Maximum likelihood estimation for Gaussian processes under inequality constraints".
