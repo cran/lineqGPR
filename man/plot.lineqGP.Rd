@@ -4,7 +4,7 @@
 \alias{plot.lineqGP}
 \title{Plot for the \code{"lineqGP"} S3 Class}
 \usage{
-\method{plot}{lineqGP}(x, y, ytest = NULL, probs = c(0.05, 0.95),
+\method{plot}{lineqGP}(x, y, ytest = NULL, probs = c(0.025, 0.975),
   bounds = NULL, addlines = TRUE, nblines = 5, ...)
 }
 \arguments{

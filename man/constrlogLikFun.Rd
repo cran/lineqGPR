@@ -32,7 +32,7 @@ conditionally to the inequality constraints (Lopez-Lopera et al., 2018).
 }
 \details{
 Orthant multinormal probabilities are estimated according to
-(Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2018).
+(Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2017).
 }
 \references{
 Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),

@@ -350,8 +350,10 @@ bounds2lineqSys <- function(d = nrow(A), l = 0, u = 1, A = diag(d),
              idx <- which(g == Inf)
              g <- g[-idx]
              M <- M[-idx, ]
-             if (length(g) == 0) stop('bounds not defined')
+             # if (length(g) == 0) stop('bounds not defined')
            }
+           if (!is.matrix(M)) ##
+             M <- matrix(M, nrow = 1) ##
            return(list(M = M, g = g))
          }, {
            stop('type of linear system "', lineqSysType, '" is not supported')
@@ -377,7 +379,7 @@ bounds2lineqSys <- function(d = nrow(A), l = 0, u = 1, A = diag(d),
 #' @import graphics stats grDevices
 #' @export
 plot.lineqGP <- function(x, y, ytest = NULL,
-                         probs = c(0.05, 0.95), bounds = NULL,
+                         probs = c(0.025, 0.975), bounds = NULL,
                          addlines = TRUE, nblines = 5, ...) {
   model <- x
   xtrain <- model$x
@@ -459,7 +461,7 @@ ggplot.lineqGP <- function(data, mapping, ytest = NULL,
     xlim <- range(c(xtrain, xtest))
   if (is.null(ylim))
     ylim <- range(qtls)
-  fig <- ggplot() +
+  fig <- ggplot() + labs(title = main) + 
     scale_x_continuous(name = xlab) + scale_y_continuous(name = ylab) +
     coord_cartesian(xlim = xlim, ylim = ylim)
   if (!fillbackground)
@@ -495,23 +497,6 @@ ggplot.lineqGP <- function(data, mapping, ytest = NULL,
   return(fig)
 }
 
-#' @title Plot for the \code{"lineqDGP"} S3 Class
-#' @description Plot for the \code{"lineqDGP"} S3 class.
-#' See \code{\link{plot.lineqGP}} for more details.
-#' @param x an object with \code{"lineqDGP"} S3 class.
-#' @param y not used.
-#' @param ... further arguments passed to or from other methods.
-#' @return Plot with the \code{"lineqDGP"} model.
-#'
-#' @seealso \code{\link{plot.lineqGP}}, \code{\link{plot}}
-#' @author A. F. Lopez-Lopera.
-#'
-#' @method plot lineqDGP
-#' @export
-plot.lineqDGP <- function(x, y, ...) {
-  plot.lineqGP(x, y, ...)
-}
-
 #' @title GGPlot for the \code{"lineqDGP"} S3 Class
 #' @description GGPlot for the \code{"lineqDGP"} S3 class.
 #' See \code{\link{ggplot.lineqGP}} for more details.
@@ -527,4 +512,21 @@ plot.lineqDGP <- function(x, y, ...) {
 #' @export
 ggplot.lineqDGP <- function(data, mapping, ...) {
   ggplot.lineqGP(data, mapping, ...)
+}
+
+#' @title Plot for the \code{"lineqAGP"} S3 Class
+#' @description Plot for the \code{"lineqAGP"} S3 class.
+#' See \code{\link{plot.lineqGP}} for more details.
+#' @param x an object with \code{"lineqAGP"} S3 class.
+#' @param y not used.
+#' @param ... further arguments passed to or from other methods.
+#' @return Plot with the \code{"lineqAGP"} model.
+#'
+#' @seealso \code{\link{ggplot.lineqGP}}, \code{\link{plot}}
+#' @author A. F. Lopez-Lopera.
+#'
+#' @method plot lineqAGP
+#' @export
+plot.lineqAGP <- function(x, y, ...) {
+  plot.lineqGP(x, y, ...)
 }

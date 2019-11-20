@@ -10,10 +10,10 @@
 #' in future versions for higher dimensions.
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-#' \href{https://doi.org/10.1137/17M1153157}{[link]}
+#' \emph{ArXiv e-prints}
+#' \href{https://arxiv.org/abs/1710.07453}{[link]}
 #'
 #' Maatouk, H. and Bay, X. (2017),
 #' "Gaussian process emulators for computer experiments with inequality constraints".
@@ -22,7 +22,7 @@
 #' \href{https://link.springer.com/article/10.1007/s11004-017-9673-2}{[link]}
 #'
 #' @examples
-#' x <- seq(0, 1, 0.01)
+#' x <- seq(0, 1, 1e-3)
 #' m <- 5
 #' u <- seq(0, 1, 1/(m-1))
 #' Phi <- basisCompute.lineqGP(x, u, d = 1)
@@ -52,19 +52,20 @@ basisCompute.lineqGP <- function(x, u, d = 1) {
     Phi <- matrix(0, n, m)
     Phi[idx] <- 1 - distAbs[idx]
   } else if (d >= 2){
-    Phip <- list()
+    PhiList <- list()
     for (k in seq(d)) {
-      distAbs <- abs(outer(x[, k]/delta[k], u[[k]]/delta[k], "-"))
-      idx <- distAbs <= 1
-      Phi_temp <- matrix(0, n, m[k])
-      Phi_temp[idx] <- 1 - distAbs[idx]
-      Phip[[k]] <- Phi_temp
+      PhiList[[k]] <- basisCompute.lineqGP(x[, k], u[[k]], d = 1)
+      # distAbs <- abs(outer(x[, k]/delta[k], u[[k]]/delta[k], "-"))
+      # idx <- distAbs <= 1
+      # Phi_temp <- matrix(0, n, m[k])
+      # Phi_temp[idx] <- 1 - distAbs[idx]
+      # Phip[[k]] <- Phi_temp
     }
     Phi <- matrix(0, n, prod(m))
     for (i in seq(n)) {
-      Phi_temp2 <- Phip[[1]][i, ]
+      Phi_temp2 <- PhiList[[1]][i, ]
       for (k in 2:d) {
-        Phi_temp2 <- Phi_temp2 %x% Phip[[k]][i, ]
+        Phi_temp2 <- Phi_temp2 %x% PhiList[[k]][i, ]
       }
       Phi[i, ] <- Phi_temp2
     }
@@ -94,10 +95,10 @@ basisCompute.lineqGP <- function(x, u, d = 1) {
 #' @seealso \code{\link{bounds2lineqSys}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-#' \href{https://doi.org/10.1137/17M1153157}{[link]}
+#' \emph{ArXiv e-prints}
+#' \href{https://arxiv.org/abs/1710.07453}{[link]}
 #'
 #' @examples
 #' linSys1 <- lineqGPSys(m = 5, constrType = "boundedness", l = 0, u = 1, lineqSysType = "twosides")
@@ -122,7 +123,12 @@ lineqGPSys <- function(m = nrow(A),
                  if (length(l) == 1) l <- c(-Inf, rep(l, m-1))
                  if (length(u) == 1) u <- c(Inf, rep(u, m-1))
                  A <- diag(m)
-                 diag(A[-1, -ncol(A)]) <- -1
+                 if (m == 2) {
+                   A[2, 1] <- -1
+                 } else {
+                   diag(A[-1, -ncol(A)]) <- -1
+                 }
+                 # diag(A[-1, -ncol(A)]) <- -1
                  linSys <- bounds2lineqSys(nrow(A), l, u, A, lineqSysType, rmInf)
              }, convexity = {
                  if (length(l) == 1) l <- c(-rep(Inf, 2), rep(l, m-2))
@@ -191,10 +197,10 @@ lineqGPSys <- function(m = nrow(A),
 #'
 #' @seealso \code{\link{augment.lineqGP}}, \code{\link{predict.lineqGP}}, \code{\link{simulate.lineqGP}}
 #' @author A. F. Lopez-Lopera.
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-#' \href{https://doi.org/10.1137/17M1153157}{[link]}
+#' \emph{ArXiv e-prints}
+#' \href{https://arxiv.org/abs/1710.07453}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -264,10 +270,10 @@ create.lineqGP <- function(x, y, constrType) {
 #'          \code{\link{simulate.lineqGP}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-#' \href{https://doi.org/10.1137/17M1153157}{[link]}
+#' \emph{ArXiv e-prints}
+#' \href{https://arxiv.org/abs/1710.07453}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -338,7 +344,7 @@ augment.lineqGP <- function(x, ...) {
     expr <- paste("AllGammas[[", seq(model$d), "]]", collapse = " %x% ")
     Gamma <- eval(parse(text = expr))
   }
-  model$Gamma <- Gamma + model$kernParam$nugget*diag(nrow(Gamma))
+  model$Gamma <- Gamma# + model$kernParam$nugget*diag(nrow(Gamma))
   model$Phi <- basisCompute.lineqGP(x, u, ncol(x))
 
   # precomputing the linear system for the QP solver and MCMC samplers
@@ -410,10 +416,10 @@ augment.lineqGP <- function(x, ...) {
 #'          \code{\link{simulate.lineqGP}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-#' \href{https://doi.org/10.1137/17M1153157}{[link]}
+#' \emph{ArXiv e-prints}
+#' \href{https://arxiv.org/abs/1710.07453}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -474,7 +480,7 @@ predict.lineqGP <- function(object, xtest, ...) {
   # d <- matrix(0, nrow = nrow(model$Gamma))
   # pred$xi.map <- solve.QP(invGamma, d, t(A), b, nrow(model$x))$solution
   if (min(eigen(pred$Sigma, symmetric = TRUE)$values) <= 0) # numerical stability
-    pred$Sigma <- pred$Sigma + 1e-6*diag(nrow(pred$Sigma))
+    pred$Sigma <- pred$Sigma + model$kernParam$nugget*diag(nrow(pred$Sigma))
   invSigma <- chol2inv(chol(pred$Sigma))
   pred$xi.map <- solve.QP(invSigma, t(pred$mu) %*% invSigma,
                           t(model$lineqSys$M), model$lineqSys$g)$solution
@@ -509,10 +515,10 @@ predict.lineqGP <- function(object, xtest, ...) {
 #'          \code{\link{predict.lineqGP}}
 #' @author A. F. Lopez-Lopera.
 #'
-#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+#' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
 #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
-#' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-#' \href{https://doi.org/10.1137/17M1153157}{[link]}
+#' \emph{ArXiv e-prints}
+#' \href{https://arxiv.org/abs/1710.07453}{[link]}
 #'
 #' @examples
 #' # creating the model
@@ -549,9 +555,10 @@ simulate.lineqGP <- function(object, nsim = 1, seed = NULL, xtest, ...) {
 
   # computing the transformed conditional mode and covariance matrix given
   # the interpolation points and the inequality constraints
+  eta.mu <- as.vector(pred$Lambda %*% pred$mu)
   eta.map <- as.vector(pred$Lambda %*% pred$xi.map)
   Sigma.eta <- pred$Lambda %*% pred$Sigma %*% t(pred$Lambda)
-  if (min(eigen(Sigma.eta, symmetric = TRUE)$values) < 0)
+  if (min(eigen(Sigma.eta, symmetric = TRUE)$values) <= 0)
     Sigma.eta <- Sigma.eta + model$kernParam$nugget*diag(nrow(Sigma.eta))
 
   # listing control terms
@@ -560,7 +567,7 @@ simulate.lineqGP <- function(object, nsim = 1, seed = NULL, xtest, ...) {
   control$constrType <- model$constrType # for HMC
 
   # sampling from the truncated multinormal
-  tmvPar <- list(mu = eta.map, Sigma = Sigma.eta, lb = pred$lb, ub = pred$ub)
+  tmvPar <- list(mu = eta.mu, map = eta.map, Sigma = Sigma.eta, lb = pred$lb, ub = pred$ub)
   class(tmvPar) <- model$localParam$sampler
   set.seed(seed)
   eta <- tmvrnorm(tmvPar, nsim, control)

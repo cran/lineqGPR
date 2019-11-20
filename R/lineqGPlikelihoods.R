@@ -10,8 +10,13 @@
 #' @param opts see \code{\link{nl.opts}}. Parameter \code{parfixed} indices of
 #' fixed parameters to do not be optimised. If \code{estim.varnoise} is true, the
 #' noise variance is estimated.
+#' @param seed an optional number. Set a seed to replicate results.
+#' @param estim.varnoise an optional logical. If \code{TRUE}, a noise variance is estimated.
+#' @param bounds.varnoise a vector with bounds of noise variance.
 #' @param add.constr an optional logical. If \code{TRUE}, the inequality constraints are taken
 #' into account in the optimisation.
+#' @param additive an optional logical. If \code{TRUE}, the likelihood of an additive GP model
+#' is computed in the optimisation.
 #' @param mcmc.opts if \code{add.constr}, mcmc options passed to methods.
 #' @param max.trials the value of the maximum number of trials when errors are produced by instabilities.
 #' @param ... further arguments passed to or from other methods.
@@ -24,31 +29,43 @@
 #' @author A. F. Lopez-Lopera.
 #'
 #' @import nloptr
+#' @importFrom  purrr map
 #' @export
 lineqGPOptim <- function(model,
                          x0 = model$kernParam$par,
                          eval_f = "logLik",
-                         lb = rep(0.01, length(par)),
-                         ub = rep(Inf, length(par)),
+                         lb = rep(0.01, length(x0)),
+                         ub = rep(Inf, length(x0)),
                          opts = list(algorithm = "NLOPT_LD_MMA",
                                      print_level = 0,
                                      ftol_abs = 1e-3,
                                      maxeval = 50,
                                      check_derivatives = FALSE,
-                                     parfixed = rep(FALSE, length(par)),
-                                     estim.varnoise = FALSE,
-                                     bounds.varnoise = c(0, Inf)),
+                                     parfixed = rep(FALSE, length(x0))),
+                         seed = 1,
+                         estim.varnoise = FALSE,
+                         bounds.varnoise = c(0, Inf),
                          add.constr = FALSE,
+                         additive = FALSE,
                          mcmc.opts = list(probe = "Genz", nb.mcmc = 1e3),
                          max.trials = 10, ...) {
+  if (additive) {
+    x0 <- unlist(purrr::map(model$kernParam, "par"))
+    lb <- rep(0.01, length(x0))
+    ub <- rep(Inf, length(x0))
+    opts$parfixed <-  rep(FALSE, length(x0))
+  }
+  
   model <- augment(model)
   if (!("parfixed" %in% names(opts)))
     opts$parfixed <- rep(FALSE, length(par))
-  if (!("bounds.varnoise" %in% names(opts)))
-    opts$estim.varnoise = FALSE
+  # if (!("bounds.varnoise" %in% names(opts)))
+  #   opts$estim.varnoise = FALSE
   
   # changing the functions according to fn
   if (eval_f == "logLik") {
+    if (additive) 
+      eval_f = paste(eval_f, "Additive", sep = "")
     fn <- paste(eval_f, "Fun", sep = "")
     gr <- paste(eval_f, "Grad", sep = "")
     if (add.constr) {
@@ -57,12 +74,12 @@ lineqGPOptim <- function(model,
     }
   }   # CV methods will be implemented in future versions
 
-  if (opts$estim.varnoise) {
+  if (estim.varnoise) {
     x0 <- c(x0, model$varnoise)
-    lb <- c(lb, opts$bounds.varnoise[1])
-    ub <- c(ub, opts$bounds.varnoise[2])
+    lb <- c(lb, bounds.varnoise[1])
+    ub <- c(ub, bounds.varnoise[2])
   }
-  seed <- 5e1^sum(x0) # to try with different and fixed initial parameters
+  # seed <- 5e1^sum(x0) # to try with different and fixed initial parameters
   trial <- 1
   while(trial <= max.trials) {
     optim <- try(nloptr(x0 = x0,
@@ -74,7 +91,7 @@ lineqGPOptim <- function(model,
                         model = model,
                         mcmc.opts = mcmc.opts,
                         parfixed = opts$parfixed,
-                        estim.varnoise = opts$estim.varnoise, ...))
+                        estim.varnoise = estim.varnoise, ...))
     if (class(optim) == "try-error") {
       set.seed(seed)
       x0Rand <- runif(length(x0), lb, ub)
@@ -89,12 +106,17 @@ lineqGPOptim <- function(model,
   if (trial > max.trials) {
     stop('Max number of trials has been exceeded with errors.')
   } else {
-    # expanding the model accordint to the optimized parameters
-    if (opts$estim.varnoise) {
+    # expanding the model according to the optimized parameters
+    if (estim.varnoise) {
       model$varnoise <- optim$solution[length(optim$solution)]
       optim$solution <- optim$solution[-length(optim$solution)]
     }
-    model$kernParam$par <- optim$solution
+    if (additive) {
+      for (k in 1:model$d)
+        model$kernParam[[k]]$par <- optim$solution[(k-1)*length(model$kernParam[[k]]$par) + 1:2]
+    } else {
+      model$kernParam$par <- optim$solution
+    }
     model$kernParam$l <- optim$objective # used for multistart procedures
     model <- augment(model)
     return(model)
@@ -122,19 +144,33 @@ lineqGPOptim <- function(model,
 logLikFun <- function(par = model$kernParam$par, model,
                       parfixed = NULL, mcmc.opts = NULL,
                       estim.varnoise = FALSE) {
-  m <- model$localParam$m
-  u <- vector("list", model$d) # list with d sets of knots
-  for (j in 1:model$d)
-    u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)))
+  switch (class(model),
+    lineqGP = {
+      m <- model$localParam$m
+      u <- vector("list", model$d) # list with d sets of knots
+      for (j in 1:model$d)
+        u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)))
+    }, lineqSGP = {
+      u <- model$u
+      m <- c(unlist(model$localParam$m))
+    } 
+  )
   
   if (estim.varnoise) {
     varnoise <- par[length(par)]
     par <- par[-length(par)]
+  } else {
+    varnoise <- model$varnoise
   }
 
   AllGammas <- vector("list", model$d) # list with the d covariance matrices
   if (length(par) == 2 && length(unique(m)) == 1) {
-    uBase <- u[[1]]
+    if (is.list(u)) {
+      uBase <- u[[1]]
+    } else {
+      uBase <- u
+    }
+    
     GammaBase <- kernCompute(uBase, uBase,
                              model$kernParam$type,
                              par)
@@ -158,8 +194,8 @@ logLikFun <- function(par = model$kernParam$par, model,
 
   Phi <- model$Phi
   Kyy <- Phi %*% Gamma %*% t(Phi)
-  if (estim.varnoise)
-    Kyy <- Kyy + varnoise*diag(nrow(Kyy))
+  # if (estim.varnoise)
+  Kyy <- Kyy + varnoise*diag(nrow(Kyy))
   cholKyy <- chol(Kyy + model$kernParam$nugget*diag(nrow(Kyy)))
   logDetKyy <- 2*sum(diag(log(cholKyy)))
   invKyy <- chol2inv(cholKyy)
@@ -168,7 +204,7 @@ logLikFun <- function(par = model$kernParam$par, model,
 }
 
 #' @title Gradient of the Log-Likelihood of a Gaussian Process.
-#' @description Compute the gradient numerically of the negative log-likelihood of a Gaussian Process.
+#' @description Compute the gradient of the negative log-likelihood of a Gaussian Process.
 #' @param par the values of the covariance parameters.
 #' @param model an object with \code{"lineqGP"} S3 class.
 #' @param parfixed indices of fixed parameters to do not be optimised.
@@ -189,10 +225,17 @@ logLikFun <- function(par = model$kernParam$par, model,
 logLikGrad <- function(par = model$kernParam$par, model,
                        parfixed = rep(FALSE, length(par)), mcmc.opts = NULL,
                        estim.varnoise = FALSE) {
-  m <- model$localParam$m
-  u <- vector("list", model$d) # list with d sets of knots
-  for (j in 1:model$d)
-    u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)))
+  switch (class(model),
+          lineqGP = {
+            m <- model$localParam$m
+            u <- vector("list", model$d) # list with d sets of knots
+            for (j in 1:model$d)
+              u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)))
+          }, lineqSGP = {
+            u <- model$u
+            m <- c(unlist(model$localParam$m))
+          } 
+  )
 
   if (estim.varnoise) {
     varnoise <- par[length(par)]
@@ -201,7 +244,11 @@ logLikGrad <- function(par = model$kernParam$par, model,
   
   AllGammas <- vector("list", model$d) # list with the d covariance matrices
   if (length(par) == 2 && length(unique(m)) == 1) {
-    uBase <- u[[1]]
+    if (is.list(u)) {
+      uBase <- u[[1]]
+    } else {
+      uBase <- u
+    }
     GammaBase <- kernCompute(uBase, uBase,
                              model$kernParam$type,
                              par)
@@ -275,7 +322,7 @@ logLikGrad <- function(par = model$kernParam$par, model,
 #' @param estim.varnoise If \code{true}, a noise variance is estimated.
 #' @return The value of the negative log-constrained-likelihood.
 #' @details Orthant multinormal probabilities are estimated according to
-#' (Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2018).
+#' (Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2017).
 #'
 #' @seealso \code{\link{constrlogLikGrad}}, \code{\link{logLikFun}},
 #'          \code{\link{logLikGrad}}
@@ -375,9 +422,9 @@ constrlogLikFun <- function(par = model$kernParam$par, model, parfixed = NULL,
   switch(mcmc.opts$probe,
          Genz = {
            f <- f - log(mvtnorm::pmvnorm(model$lb, model$ub,
-                                as.vector(mu.eta), sigma = Sigma.eta)[[1]]) +
+                                         as.vector(mu.eta), sigma = Sigma.eta)[[1]]) +
              log(mvtnorm::pmvnorm(model$lb, model$ub,
-                         rep(0, nrow(Gamma.eta)), sigma = Gamma.eta)[[1]])
+                                  rep(0, nrow(Gamma.eta)), sigma = Gamma.eta)[[1]])
          }, ExpT = {
            f <- f - log(TruncatedNormal::mvNcdf(model$lb-mu.eta, model$ub-mu.eta,
                                Sigma.eta, mcmc.opts$nb.mcmc)$prob) +
@@ -463,3 +510,365 @@ constrlogLikGrad <- function(par = model$kernParam$par, model,
   }
   return(gradf)
 }
+
+#' @title Log-Likelihood of a Additive Gaussian Process.
+#' @description Compute the negative log-likelihood of an Additive Gaussian Process.
+#' @param par the values of the covariance parameters.
+#' @param model an object with \code{"lineqAGP"} S3 class.
+#' @param parfixed not used.
+#' @param mcmc.opts not used.
+#' @param estim.varnoise If \code{true}, a noise variance is estimated.
+#' @return The value of the negative log-likelihood.
+#' @seealso \code{\link{logLikAdditiveGrad}}
+# #'          \code{\link{constrlogLikAdditiveFun}},
+# #'          \code{\link{constrlogLikAdditiveGrad}}
+#' @author A. F. Lopez-Lopera.
+#'
+#' @references Rasmussen, C. E. and Williams, C. K. I. (2005),
+#' "Gaussian Processes for Machine Learning (Adaptive Computation and Machine Learning)".
+#' \emph{The MIT Press}.
+#' \href{http://www.gaussianprocess.org/gpml/}{[link]}
+#'
+#' @export
+logLikAdditiveFun <- function(par = unlist(purrr::map(model$kernParam, "par")),
+                              model,
+                              parfixed = NULL, mcmc.opts = NULL,
+                              estim.varnoise = FALSE) {
+  m <- model$localParam$m
+  u <- Gamma <- vector("list", model$d)
+  Phi <- vector("list", model$d)
+  logDetGamma <- rep(0, model$d)
+  invGamma <- vector("list", model$d)
+  
+  for (j in 1:model$d)
+    u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)), ncol = 1) # discretization vector
+  
+  if (estim.varnoise) {
+    varnoise <- par[length(par)]
+    par <- par[-length(par)]
+  } else {
+    varnoise <- 0
+  }
+  
+  # computing the kernel matrix for the prior
+  for (k in 1:model$d) {
+    Gamma[[k]] <- kernCompute(u[[k]], u[[k]], model$kernParam[[k]]$type,
+                              par[(k-1)*length(model$kernParam[[k]]$par) + 1:2])
+    Phi[[k]] <- basisCompute.lineqGP(model$x[, k], u[[k]])
+    cholGamma <- chol(Gamma[[k]])
+    invGamma[[k]] <- chol2inv(cholGamma)
+    logDetGamma[k] <- 2*sum(diag(log(cholGamma)))
+  }
+  
+  # GammaFull <- Gamma[[1]]
+  # GammaPhitList <- vector("list", model$d)
+  # GammaPhitList[[1]] <- Gamma[[1]] %*% t(Phi[[1]])
+  # GammaPhitFull <- GammaPhitList[[1]]
+  # PhiGammaPhitFull <- Phi[[1]] %*% GammaPhitFull
+  # for (k in 2:model$d) {
+  #   GammaPhitList[[k]] <- Gamma[[k]] %*% t(Phi[[k]])
+  #   GammaPhitFull <- GammaPhitFull + GammaPhitList[[k]]
+  #   PhiGammaPhitFull <- PhiGammaPhitFull + Phi[[k]] %*% GammaPhitList[[k]]
+  # }
+  # if (estim.varnoise)
+  #   PhiGammaPhitFull <- PhiGammaPhitFull + varnoise*diag(nrow(PhiGammaPhitFull))
+  # Kyy <- PhiGammaPhitFull
+  # cholKyy <- chol(PhiGammaPhitFull + model$nugget*diag(nrow(Kyy)))
+  # logDetKyy <- 2*sum(diag(log(cholKyy)))
+  # invKyy <- chol2inv(cholKyy)
+  
+  hfunBigPhi <- parse(text = paste("cbind(",
+                                   paste("Phi[[", 1:model$d, "]]", sep = "", collapse = ","),
+                                   ")", sep = ""))
+  hfunBigInvGamma <- parse(text = paste("bdiag(",
+                                        paste("invGamma[[", 1:model$d, "]]", sep = "", collapse = ","),
+                                        ")", sep = ""))
+  bigPhi <- eval(hfunBigPhi)
+  bigInvGamma <- eval(hfunBigInvGamma)
+  GammaPhitPhi <- varnoise*bigInvGamma + t(bigPhi)%*%bigPhi
+  invGammaPhitPhi <- chol2inv(chol(GammaPhitPhi))
+  invPhiGammaPhitFull <- (diag(length(model$y)) - bigPhi%*%invGammaPhitPhi%*%t(bigPhi))/varnoise
+  invKyy <- invPhiGammaPhitFull
+  logDetKyy <- log(varnoise^(length(model$y)-nrow(bigInvGamma))) + sum(logDetGamma) +
+    log(det(as.matrix(GammaPhitPhi)))
+  
+  f <- 0.5*(logDetKyy + nrow(invKyy)*log(2*pi) + t(model$y)%*%invKyy%*%model$y)
+  return(f)
+}
+
+#' @title  Gradient of the Log-Likelihood of a Additive Gaussian Process.
+#' @description Compute the gradient of the negative log-likelihood of an Additive Gaussian Process.
+#' @param par the values of the covariance parameters.
+#' @param model an object with \code{"lineqAGP"} S3 class.
+#' @param parfixed indices of fixed parameters to do not be optimised.
+#' @param mcmc.opts not used.
+#' @param estim.varnoise If \code{true}, a noise variance is estimated.
+#' @return the gradient of the negative log-likelihood.
+#'
+#' @seealso \code{\link{logLikAdditiveFun}}
+# #'          \code{\link{constrlogLikAdditiveFun}},
+# #'          \code{\link{constrlogLikAdditiveGrad}}
+#' @author A. F. Lopez-Lopera.
+#'
+#' @references Rasmussen, C. E. and Williams, C. K. I. (2005),
+#' "Gaussian Processes for Machine Learning (Adaptive Computation and Machine Learning)".
+#' \emph{The MIT Press}.
+#' \href{http://www.gaussianprocess.org/gpml/}{[link]}
+#'
+#' @export
+logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")), 
+                               model,  parfixed = rep(FALSE, model$d*length(par)),
+                               mcmc.opts = list(probe = "Genz", nb.mcmc = 1e3),
+                               estim.varnoise = FALSE) {
+  m <- model$localParam$m
+  u <- Gamma <- vector("list", model$d)
+  Phi <- vector("list", model$d)
+  logDetGamma <- rep(0, model$d)
+  invGamma <- vector("list", model$d)
+  
+  for (j in 1:model$d)
+    u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)), ncol = 1) # discretization vector
+  
+  if (estim.varnoise) {
+    varnoise <- par[length(par)]
+    par <- par[-length(par)]
+  }
+  
+  # computing the kernel matrix for the prior
+  for (k in 1:model$d) {
+    Gamma[[k]] <- kernCompute(u[[k]], u[[k]], model$kernParam[[k]]$type,
+                              par[(k-1)*length(model$kernParam[[k]]$par) + 1:2])
+    Phi[[k]] <- basisCompute.lineqGP(model$x[, k], u[[k]])
+    cholGamma <- chol(Gamma[[k]])
+    invGamma[[k]] <- chol2inv(cholGamma)
+    logDetGamma[k] <- 2*sum(diag(log(cholGamma)))
+  }
+  
+  # GammaFull <- Gamma[[1]]
+  # GammaPhitList <- vector("list", model$d)
+  # GammaPhitList[[1]] <- Gamma[[1]] %*% t(Phi[[1]])
+  # GammaPhitFull <- GammaPhitList[[1]]
+  # PhiGammaPhitFull <- Phi[[1]] %*% GammaPhitFull
+  # for (k in 2:model$d) {
+  #   GammaPhitList[[k]] <- Gamma[[k]] %*% t(Phi[[k]])
+  #   GammaPhitFull <- GammaPhitFull + GammaPhitList[[k]]
+  #   PhiGammaPhitFull <- PhiGammaPhitFull + Phi[[k]] %*% GammaPhitList[[k]]
+  # }
+  # if (estim.varnoise)
+  #   PhiGammaPhitFull <- PhiGammaPhitFull + varnoise*diag(nrow(PhiGammaPhitFull))
+  # Kyy <- PhiGammaPhitFull
+  # cholKyy <- chol(PhiGammaPhitFull + model$nugget*diag(nrow(Kyy)))
+  # logDetKyy <- 2*sum(diag(log(cholKyy)))
+  # invKyy <- chol2inv(cholKyy)
+  
+  hfunBigPhi <- parse(text = paste("cbind(",
+                                   paste("Phi[[", 1:model$d, "]]", sep = "", collapse = ","),
+                                   ")", sep = ""))
+  hfunBigInvGamma <- parse(text = paste("bdiag(",
+                                        paste("invGamma[[", 1:model$d, "]]", sep = "", collapse = ","),
+                                        ")", sep = ""))
+  bigPhi <- eval(hfunBigPhi)
+  bigInvGamma <- eval(hfunBigInvGamma)
+  GammaPhitPhi <- varnoise*bigInvGamma + t(bigPhi)%*%bigPhi
+  invGammaPhitPhi <- chol2inv(chol(GammaPhitPhi))
+  invPhiGammaPhitFull <- (diag(length(model$y)) - bigPhi%*%invGammaPhitPhi%*%t(bigPhi))/varnoise
+  invKyy <- invPhiGammaPhitFull
+  logDetKyy <- log(varnoise^(length(model$y)-nrow(bigInvGamma))) + sum(logDetGamma) +
+    log(det(as.matrix(GammaPhitPhi)))
+  
+  gradKyyTemp <- c()
+  idx_iter <- seq(length(par))
+  idx_iter <- idx_iter[parfixed == FALSE]
+
+  alpha <- invKyy %*% model$y
+  cteTermLik <- invKyy - alpha%*%t(alpha)
+  gradf <- rep(0, length(par))
+  for (k in 1:model$d) {
+    gradGammaSigma2 <- Gamma[[k]]/par[(k-1)*length(model$kernParam[[k]]$par) + 1]
+    gradKyySigma2 <- Phi[[k]] %*% gradGammaSigma2 %*% t(Phi[[k]])
+    gradf[(k-1)*length(model$kernParam[[k]]$par) + 1] <- 0.5*sum(diag(cteTermLik %*% gradKyySigma2))
+    
+    gradGammaTheta <- attr(Gamma[[k]], 'gradient')[[2]]
+    gradKyyTheta <- Phi[[k]] %*% gradGammaTheta %*% t(Phi[[k]])
+    gradf[(k-1)*length(model$kernParam[[k]]$par) + 2] <- 0.5*sum(diag(cteTermLik %*% gradKyyTheta))
+  }
+  gradf[parfixed == TRUE] <- 0
+  
+  if (estim.varnoise) {
+    gradKyynoise <- diag(nrow(invKyy))
+    gradf <- c(gradf, 0.5*sum(diag(cteTermLik %*% gradKyynoise)))
+  }
+  
+  # gradf <- nl.grad(par, logLikFun, heps = 1e-9, model, parfixed, mcmc.opts)
+  # gradf[parfixed] <- 0
+  return(gradf)
+}
+
+# #' @title Log-Constrained-Likelihood of an Additive Gaussian Process.
+# #' @description Compute the negative log-constrained-likelihood of an Additive
+# #' Gaussian Process conditionally to the inequality constraints
+# #' (Lopez-Lopera et al., 2018).
+# #' @param par the values of the covariance parameters.
+# #' @param model an object with \code{"lineqAGP"} S3 class.
+# #' @param parfixed not used.
+# #' @param mcmc.opts mcmc options. \code{mcmc.opts$probe} A character string corresponding
+# #' to the estimator for the orthant multinormal probabilities.
+# #' Options: \code{"Genz"} (Genz, 1992), \code{"ExpT"} (Botev, 2017).
+# #' If \code{probe == "ExpT"}, \code{mcmc.opts$nb.mcmc}  is the number of MCMC
+# #' samples used for the estimation.
+# #' @param estim.varnoise If \code{true}, a noise variance is estimated.
+# #' @return The value of the negative log-constrained-likelihood.
+# #' @details Orthant multinormal probabilities are estimated according to
+# #' (Genz, 1992; Botev, 2017). See (Lopez-Lopera et al., 2018).
+# #'
+# #' @seealso \code{\link{constrlogLikAdditiveGrad}}, \code{\link{logLikAdditiveFun}},
+# #'          \code{\link{logLikAdditiveGrad}}
+# #' @author A. F. Lopez-Lopera.
+# #'
+# #' @references Lopez-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
+# #' "Finite-dimensional Gaussian approximation with linear inequality constraints".
+# #' \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
+# #' \href{https://doi.org/10.1137/17M1153157}{[link]}
+# #'
+# #' @references Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2018),
+# #' "Maximum likelihood estimation for Gaussian processes under inequality constraints".
+# #' \emph{ArXiv e-prints}
+# #' \href{https://arxiv.org/abs/1804.03378}{[link]}
+# #'
+# #' Genz, A. (1992),
+# #' "Numerical computation of multivariate normal probabilities".
+# #' \emph{Journal of Computational and Graphical Statistics},
+# #' 1:141-150.
+# #' \href{https://www.tandfonline.com/doi/abs/10.1080/10618600.1992.10477010}{[link]}
+# #'
+# #' Botev, Z. I. (2017),
+# #' "The normal law under linear restrictions: simulation and estimation via minimax tilting".
+# #' \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)},
+# #' 79(1):125-148.
+# #' \href{https://rss.onlinelibrary.wiley.com/doi/pdf/10.1111/rssb.12162}{[link]}
+# #'
+# #' @import TruncatedNormal mvtnorm
+# #' @export
+# constrlogLikAdditiveFun <- function(par = unlist(purrr::map(model$kernParam, "par")),
+#                                     model,
+#                                     parfixed = NULL, mcmc.opts = NULL,
+#                                     estim.varnoise = FALSE) {
+#   m <- model$localParam$m
+#   u <- Gamma <- vector("list", model$d)
+#   Phi <- vector("list", model$d)
+#   
+#   for (j in 1:model$d)
+#     u[[j]] <- matrix(seq(0, 1, by = 1/(m[j]-1)), ncol = 1) # discretization vector
+#   
+#   if (estim.varnoise) {
+#     varnoise <- par[length(par)]
+#     par <- par[-length(par)]
+#   }
+#   
+#   # computing the kernel matrix for the prior
+#   for (k in 1:model$d) {
+#     Gamma[[k]] <- kernCompute(u[[k]], u[[k]], model$kernParam[[k]]$type,
+#                               par[(k-1)*model$d + 1:2])
+#     Phi[[k]] <- basisCompute.lineqGP(model$x[, k], u[[k]])
+#   }
+#   
+#   GammaFull <- Gamma[[1]]
+#   GammaPhitList <- vector("list", model$d)
+#   GammaPhitList[[1]] <- Gamma[[1]] %*% t(Phi[[1]])
+#   GammaPhitFull <- GammaPhitList[[1]]
+#   PhiGammaPhitFull <- Phi[[1]] %*% GammaPhitFull
+#   for (k in 2:model$d) {
+#     GammaPhitList[[k]] <- Gamma[[k]] %*% t(Phi[[k]])
+#     GammaPhitFull <- GammaPhitFull + GammaPhitList[[k]]
+#     PhiGammaPhitFull <- PhiGammaPhitFull + Phi[[k]] %*% GammaPhitList[[k]]
+#   }
+#   if (estim.varnoise)
+#     PhiGammaPhitFull <- PhiGammaPhitFull + varnoise*diag(nrow(PhiGammaPhitFull))
+#   
+#   Kyy <- PhiGammaPhitFull
+#   cholKyy <- chol(PhiGammaPhitFull + model$nugget*diag(nrow(Kyy)))
+#   logDetKyy <- 2*sum(diag(log(cholKyy)))
+#   invKyy <- chol2inv(cholKyy)
+#   f <- 0.5*(logDetKyy + nrow(Kyy)*log(2*pi) + t(model$y)%*%invKyy%*%model$y)
+#   
+#   # computing the other terms of the constrained log-likelihood
+#   GammaPhitInvKyy <- GammaPhit %*% invKyy
+#   mu <- GammaPhitInvKyy %*% model$y
+#   mu.eta <- model$Lambda %*% mu
+#   Sigma <- Gamma - GammaPhitInvKyy %*% t(GammaPhit)
+#   Sigma.eta <- model$Lambda %*% Sigma %*% t(model$Lambda)
+#   if (min(eigen(Sigma.eta, symmetric = TRUE)$values) <= 0) # numerical stability
+#     Sigma.eta <- Sigma.eta + 1e-5*diag(nrow(Sigma.eta))
+#   Gamma.eta <- model$Lambda %*% Gamma %*% t(model$Lambda)
+#   if (min(eigen(Gamma.eta, symmetric = TRUE)$values) <= 0) # numerical stability
+#     Gamma.eta <- Gamma.eta + 1e-5*diag(nrow(Gamma.eta))
+#   
+#   set.seed(7)
+#   switch(mcmc.opts$probe,
+#          Genz = {
+#            f <- f - log(pmvnorm(model$lb, model$ub,
+#                                 as.vector(mu.eta), sigma = Sigma.eta)[[1]]) +
+#              log(pmvnorm(model$lb, model$ub,
+#                          rep(0, nrow(Gamma.eta)), sigma = Gamma.eta)[[1]])
+#          }, ExpT = {
+#            f <- f - log(mvNcdf(model$lb-mu.eta, model$ub-mu.eta,
+#                                Sigma.eta, mcmc.opts$nb.mcmc)$prob) +
+#              log(mvNcdf(model$lb, model$ub, Gamma.eta, mcmc.opts$nb.mcmc)$prob)
+#          })
+#   
+#   
+#   return(f)
+# }
+
+# #' @title  Numerical Gradient of the Log-Likelihood of a Additive Gaussian Process.
+# #' @description Compute the gradient numerically of the negative log-likelihood of an Additive Gaussian Process.
+# #' @param par the values of the covariance parameters.
+# #' @param model an object with \code{"lineqGP"} S3 class.
+# #' @param parfixed indices of fixed parameters to do not be optimised.
+# #' @param mcmc.opts not used.
+# #' @param estim.varnoise If \code{true}, a noise variance is estimated.
+# #' @return the gradient of the negative log-likelihood.
+# #'
+# #' @seealso \code{\link{logLikAdditiveFun}}, \code{\link{logLikFun}},
+# #'          \code{\link{logLikGrad}}
+# #' @author A. F. Lopez-Lopera.
+# #'
+# #' @references Rasmussen, C. E. and Williams, C. K. I. (2005),
+# #' "Gaussian Processes for Machine Learning (Adaptive Computation and Machine Learning)".
+# #' \emph{The MIT Press}.
+# #' \href{http://www.gaussianprocess.org/gpml/}{[link]}
+# #'
+# #' @export
+# constrlogLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")),
+#                                model,  parfixed = rep(FALSE, model$d*length(par)),
+#                                mcmc.opts = list(probe = "Genz", nb.mcmc = 1e3),
+#                                estim.varnoise = FALSE) {
+#   # gradf <- nl.grad(par, constrlogLikFun, heps = 1e-9, model, parfixed, mcmc.opts)
+#   # gradf[parfixed] <- 0
+#   if (estim.varnoise)
+#     parfixed <- c(parfixed, FALSE)
+# 
+#   # this is a faster version of "nl.grad" when some parameters are fixed.
+#   if (!is.numeric(par))
+#     stop("Argument 'par' must be a numeric value.")
+#   fun <- match.fun(logLikAdditiveFun)
+#   fn <- function(x) fun(x, model, parfixed, mcmc.opts, estim.varnoise)
+#   if (length(fn(par)) != 1)
+#     stop("Function 'f' must be a univariate function of 2 variables.")
+#   n <- length(par)
+#   hh <- rep(0, n)
+#   gradf <- rep(0, n)
+# 
+#   # the gradient is computed only w.r.t. the parameters to be optimised
+#   idx_iter <- seq(n)
+#   idx_iter <- idx_iter[parfixed == FALSE]
+#   heps <- 1e-9
+#   dimIdx <- 0
+#   for (i in idx_iter) {
+#     hh[i] <- heps
+#     gradf[i] <- (fn(par + hh) - fn(par - hh))/(2 * heps)
+#     hh[i] <- 0
+#   }
+#   return(gradf)
+# }
+# 

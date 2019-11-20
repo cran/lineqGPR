@@ -11,7 +11,7 @@
 \description{
 
   Package for Gaussian process interpolation, regression and simulation
-  under linear inequality constraints based on (López-Lopera et al., 2018).
+  under linear inequality constraints based on (López-Lopera et al., 2017).
   The constrained models are given as objects with "lineqGP" S3 class.
   Implementations according to (Maatouk and Bay, 2017) are also provided
   as objects with "lineqDGP" S3 class.
@@ -65,8 +65,8 @@
 
   López-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
   "Finite-dimensional Gaussian approximation with linear inequality constraints".
-  \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224-1255.
-  \href{https://doi.org/10.1137/17M1153157}{[link]}
+  \emph{ArXiv e-prints}
+  \href{https://arxiv.org/abs/1710.07453}{[link]}
 
   Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2018),
   "Maximum likelihood estimation for Gaussian processes under inequality constraints".
