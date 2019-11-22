@@ -4,9 +4,13 @@
 \alias{constrlogLikFun}
 \title{Log-Constrained-Likelihood of a Gaussian Process.}
 \usage{
-constrlogLikFun(par = model$kernParam$par, model, parfixed = NULL,
+constrlogLikFun(
+  par = model$kernParam$par,
+  model,
+  parfixed = NULL,
   mcmc.opts = list(probe = c("Genz"), nb.mcmc = 1000),
-  estim.varnoise = FALSE)
+  estim.varnoise = FALSE
+)
 }
 \arguments{
 \item{par}{the values of the covariance parameters.}

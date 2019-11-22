@@ -4,8 +4,14 @@
 \alias{splitDoE}
 \title{Training/test data generator according to a given Design of Experiment (DoE)}
 \usage{
-splitDoE(x, y, DoE.idx = NULL, DoE.type = c("rand", "regs"),
-  ratio = 0.3, seed = NULL)
+splitDoE(
+  x,
+  y,
+  DoE.idx = NULL,
+  DoE.type = c("rand", "regs"),
+  ratio = 0.3,
+  seed = NULL
+)
 }
 \arguments{
 \item{x}{a vector (or matrix) with the input locations.}

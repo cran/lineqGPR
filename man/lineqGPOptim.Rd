@@ -4,14 +4,23 @@
 \alias{lineqGPOptim}
 \title{Gaussian Process Model Optimizations}
 \usage{
-lineqGPOptim(model, x0 = model$kernParam$par, eval_f = "logLik",
-  lb = rep(0.01, length(x0)), ub = rep(Inf, length(x0)),
-  opts = list(algorithm = "NLOPT_LD_MMA", print_level = 0, ftol_abs =
-  0.001, maxeval = 50, check_derivatives = FALSE, parfixed = rep(FALSE,
-  length(x0))), seed = 1, estim.varnoise = FALSE,
-  bounds.varnoise = c(0, Inf), add.constr = FALSE, additive = FALSE,
-  mcmc.opts = list(probe = "Genz", nb.mcmc = 1000), max.trials = 10,
-  ...)
+lineqGPOptim(
+  model,
+  x0 = model$kernParam$par,
+  eval_f = "logLik",
+  lb = rep(0.01, length(x0)),
+  ub = rep(Inf, length(x0)),
+  opts = list(algorithm = "NLOPT_LD_MMA", print_level = 0, ftol_abs = 0.001, maxeval =
+    50, check_derivatives = FALSE, parfixed = rep(FALSE, length(x0))),
+  seed = 1,
+  estim.varnoise = FALSE,
+  bounds.varnoise = c(0, Inf),
+  add.constr = FALSE,
+  additive = FALSE,
+  mcmc.opts = list(probe = "Genz", nb.mcmc = 1000),
+  max.trials = 10,
+  ...
+)
 }
 \arguments{
 \item{model}{a list with the structure of the constrained Kriging model.}

@@ -4,10 +4,17 @@
 \alias{lineqGPSys}
 \title{Linear Systems of Inequalities for \code{"lineqGP"} Models}
 \usage{
-lineqGPSys(m = nrow(A), constrType = c("boundedness", "monotonicity",
-  "convexity", "linear"), l = -Inf, u = Inf, A = diag(m),
-  d = length(m), lineqSysType = "twosides",
-  constrIdx = seq(length(m)), rmInf = TRUE)
+lineqGPSys(
+  m = nrow(A),
+  constrType = c("boundedness", "monotonicity", "convexity", "linear"),
+  l = -Inf,
+  u = Inf,
+  A = diag(m),
+  d = length(m),
+  lineqSysType = "twosides",
+  constrIdx = seq(length(m)),
+  rmInf = TRUE
+)
 }
 \arguments{
 \item{m}{the number of linear inequality constraints.}

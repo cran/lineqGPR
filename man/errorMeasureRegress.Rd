@@ -4,8 +4,14 @@
 \alias{errorMeasureRegress}
 \title{Error Measures for GP Models.}
 \usage{
-errorMeasureRegress(y, ytest, mu, varsigma, type = "all",
-  control = list(nsigma = 1.96))
+errorMeasureRegress(
+  y,
+  ytest,
+  mu,
+  varsigma,
+  type = "all",
+  control = list(nsigma = 1.96)
+)
 }
 \arguments{
 \item{y}{a vector with the output observations used for training.}

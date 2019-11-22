@@ -43,8 +43,8 @@ create <- function(class, ...) {
 #' @param ... further arguments passed to or from other methods.
 #' @return A matrix with the sample path. Samples are indexed by columns.
 #'
-#' @seealso \code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.Gibbs}},
-#'          \code{\link{tmvrnorm.HMC}}, \code{\link{tmvrnorm.ExpT}}
+#' @seealso \code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.HMC}}, 
+#'          \code{\link{tmvrnorm.ExpT}}
 #' @author A. F. Lopez-Lopera.
 #'
 #' @export

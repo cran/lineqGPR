@@ -4,8 +4,13 @@
 \alias{logLikFun}
 \title{Log-Likelihood of a Gaussian Process.}
 \usage{
-logLikFun(par = model$kernParam$par, model, parfixed = NULL,
-  mcmc.opts = NULL, estim.varnoise = FALSE)
+logLikFun(
+  par = model$kernParam$par,
+  model,
+  parfixed = NULL,
+  mcmc.opts = NULL,
+  estim.varnoise = FALSE
+)
 }
 \arguments{
 \item{par}{the values of the covariance parameters.}

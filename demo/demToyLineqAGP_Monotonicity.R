@@ -30,7 +30,7 @@ model$localParam$m <- rep(5, d)
 for (k in 1:d) 
   model$kernParam[[k]]$par <- c(1, 2)
 model$nugget <- 1e-7
-model$varnoise <- 1e-1 #varNoise
+model$varnoise <- 1e-2 #varNoise
 
 # training the model
 # Note: the covariance parameter estimation takes almost 0.5-1 hour
@@ -43,11 +43,10 @@ model <- lineqGPOptim(model,
                                   print_level = 3,
                                   ftol_abs = 1e-3,
                                   maxeval = 1e2,
-                                  check_derivatives = FALSE,
-                                  parfixed = rep(FALSE, 2*d),
-                                  estim.varnoise = TRUE,
-                                  bounds.varnoise = c(1e-1, Inf)),
-                      lb = rep(1e-2, 2*d), ub = rep(c(5, 3), d))
+                                  check_derivatives = FALSE),
+                      lb = rep(1e-2, 2*d), ub = rep(c(5, 3), d),
+                      estim.varnoise = TRUE,
+                      bounds.varnoise = c(1e-2, Inf))
 opttime <- proc.time() - opttime
 
 # simulating samples from the model
@@ -66,10 +65,11 @@ for (k in seq(5, d, 5)) {
                          modatan(xtest[, k], (1-k/d)*5), "+"),
                xlab = "x1", ylab = paste("x", k, sep = ""), zlab = "y(x1,..., xd)",
                main = "Target function", phi = 20, theta = -30, col = colormap, colkey = FALSE)
-  
+
   p <- persp3D(x = unique(xtest[, 1]), y = unique(xtest[, 2]),
                z = outer(rowMeans(sim.model$ysim[[1]]),
                          rowMeans(sim.model$ysim[[k]]), "+"),
                xlab = "x1", ylab = paste("x", k, sep = ""), zlab = "u(x1,..., xd)",
                main = "Predictive mean", phi = 20, theta = -30, col = colormap, colkey = FALSE)
 }
+

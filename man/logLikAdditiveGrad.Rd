@@ -4,10 +4,13 @@
 \alias{logLikAdditiveGrad}
 \title{Gradient of the Log-Likelihood of a Additive Gaussian Process.}
 \usage{
-logLikAdditiveGrad(par = unlist(purrr::map(model$kernParam, "par")),
-  model, parfixed = rep(FALSE, model$d * length(par)),
-  mcmc.opts = list(probe = "Genz", nb.mcmc = 1000),
-  estim.varnoise = FALSE)
+logLikAdditiveGrad(
+  par = unlist(purrr::map(model$kernParam, "par")),
+  model,
+  parfixed = rep(FALSE, model$d * length(par)),
+  mcmc.opts = NULL,
+  estim.varnoise = FALSE
+)
 }
 \arguments{
 \item{par}{the values of the covariance parameters.}

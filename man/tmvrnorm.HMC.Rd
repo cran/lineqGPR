@@ -44,8 +44,7 @@ Pakman, A. and Paninski, L. (2014),
 \href{https://www.tandfonline.com/doi/abs/10.1080/10618600.2013.788448}{[link]}
 }
 \seealso{
-\code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.Gibbs}},
-         \code{\link{tmvrnorm.ExpT}}
+\code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.ExpT}}
 }
 \author{
 A. F. Lopez-Lopera.

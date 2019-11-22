@@ -50,10 +50,13 @@ lineqGPOptim <- function(model,
                          mcmc.opts = list(probe = "Genz", nb.mcmc = 1e3),
                          max.trials = 10, ...) {
   if (additive) {
-    x0 <- unlist(purrr::map(model$kernParam, "par"))
-    lb <- rep(0.01, length(x0))
-    ub <- rep(Inf, length(x0))
-    opts$parfixed <-  rep(FALSE, length(x0))
+    xmodel <- unlist(purrr::map(model$kernParam, "par"))
+    if (length(x0) != length(xmodel)) {
+      x0 <- xmodel
+      lb <- rep(0.01, length(x0))
+      ub <- rep(Inf, length(x0))
+      opts$parfixed <-  rep(FALSE, length(x0))
+    }
   }
   
   model <- augment(model)
@@ -61,6 +64,21 @@ lineqGPOptim <- function(model,
     opts$parfixed <- rep(FALSE, length(par))
   # if (!("bounds.varnoise" %in% names(opts)))
   #   opts$estim.varnoise = FALSE
+  
+  if (!("algorithm" %in% names(opts)))
+    opts$algorithm <- "NLOPT_LD_MMA"
+  
+  if (!("print_level" %in% names(opts)))
+    opts$print_level <- 0
+  
+  if (!("ftol_abs" %in% names(opts)))
+    opts$ftol_abs <- 1e-3
+  
+  if (!("maxeval" %in% names(opts)))
+    opts$maxeval <- 50
+  
+  if (!("check_derivatives" %in% names(opts)))
+    opts$check_derivatives <- FALSE
   
   # changing the functions according to fn
   if (eval_f == "logLik") {
@@ -75,6 +93,8 @@ lineqGPOptim <- function(model,
   }   # CV methods will be implemented in future versions
 
   if (estim.varnoise) {
+    if (!("varnoise" %in% names(model)))
+      model$varnoise <- 0
     x0 <- c(x0, model$varnoise)
     lb <- c(lb, bounds.varnoise[1])
     ub <- c(ub, bounds.varnoise[2])
@@ -547,7 +567,7 @@ logLikAdditiveFun <- function(par = unlist(purrr::map(model$kernParam, "par")),
     varnoise <- par[length(par)]
     par <- par[-length(par)]
   } else {
-    varnoise <- 0
+    varnoise <- model$varnoise
   }
   
   # computing the kernel matrix for the prior
@@ -555,42 +575,41 @@ logLikAdditiveFun <- function(par = unlist(purrr::map(model$kernParam, "par")),
     Gamma[[k]] <- kernCompute(u[[k]], u[[k]], model$kernParam[[k]]$type,
                               par[(k-1)*length(model$kernParam[[k]]$par) + 1:2])
     Phi[[k]] <- basisCompute.lineqGP(model$x[, k], u[[k]])
-    cholGamma <- chol(Gamma[[k]])
-    invGamma[[k]] <- chol2inv(cholGamma)
-    logDetGamma[k] <- 2*sum(diag(log(cholGamma)))
+    # cholGamma <- chol(Gamma[[k]])
+    # invGamma[[k]] <- chol2inv(cholGamma)
+    # logDetGamma[k] <- 2*sum(diag(log(cholGamma)))
   }
   
-  # GammaFull <- Gamma[[1]]
-  # GammaPhitList <- vector("list", model$d)
-  # GammaPhitList[[1]] <- Gamma[[1]] %*% t(Phi[[1]])
-  # GammaPhitFull <- GammaPhitList[[1]]
-  # PhiGammaPhitFull <- Phi[[1]] %*% GammaPhitFull
-  # for (k in 2:model$d) {
-  #   GammaPhitList[[k]] <- Gamma[[k]] %*% t(Phi[[k]])
-  #   GammaPhitFull <- GammaPhitFull + GammaPhitList[[k]]
-  #   PhiGammaPhitFull <- PhiGammaPhitFull + Phi[[k]] %*% GammaPhitList[[k]]
-  # }
-  # if (estim.varnoise)
-  #   PhiGammaPhitFull <- PhiGammaPhitFull + varnoise*diag(nrow(PhiGammaPhitFull))
-  # Kyy <- PhiGammaPhitFull
-  # cholKyy <- chol(PhiGammaPhitFull + model$nugget*diag(nrow(Kyy)))
-  # logDetKyy <- 2*sum(diag(log(cholKyy)))
-  # invKyy <- chol2inv(cholKyy)
+  GammaPhitList <- vector("list", model$d)
+  GammaPhitList[[1]] <- Gamma[[1]] %*% t(Phi[[1]])
+  GammaPhitFull <- GammaPhitList[[1]]
+  PhiGammaPhitFull <- Phi[[1]] %*% GammaPhitFull
+  for (k in 2:model$d) {
+    GammaPhitList[[k]] <- Gamma[[k]] %*% t(Phi[[k]])
+    GammaPhitFull <- GammaPhitFull + GammaPhitList[[k]]
+    PhiGammaPhitFull <- PhiGammaPhitFull + Phi[[k]] %*% GammaPhitList[[k]]
+  }
+  if (estim.varnoise)
+    PhiGammaPhitFull <- PhiGammaPhitFull + varnoise*diag(nrow(PhiGammaPhitFull))
+  Kyy <- PhiGammaPhitFull
+  cholKyy <- chol(PhiGammaPhitFull + model$nugget*diag(nrow(Kyy)))
+  logDetKyy <- 2*sum(diag(log(cholKyy)))
+  invKyy <- chol2inv(cholKyy)
   
-  hfunBigPhi <- parse(text = paste("cbind(",
-                                   paste("Phi[[", 1:model$d, "]]", sep = "", collapse = ","),
-                                   ")", sep = ""))
-  hfunBigInvGamma <- parse(text = paste("bdiag(",
-                                        paste("invGamma[[", 1:model$d, "]]", sep = "", collapse = ","),
-                                        ")", sep = ""))
-  bigPhi <- eval(hfunBigPhi)
-  bigInvGamma <- eval(hfunBigInvGamma)
-  GammaPhitPhi <- varnoise*bigInvGamma + t(bigPhi)%*%bigPhi
-  invGammaPhitPhi <- chol2inv(chol(GammaPhitPhi))
-  invPhiGammaPhitFull <- (diag(length(model$y)) - bigPhi%*%invGammaPhitPhi%*%t(bigPhi))/varnoise
-  invKyy <- invPhiGammaPhitFull
-  logDetKyy <- log(varnoise^(length(model$y)-nrow(bigInvGamma))) + sum(logDetGamma) +
-    log(det(as.matrix(GammaPhitPhi)))
+  # hfunBigPhi <- parse(text = paste("cbind(",
+  #                                  paste("Phi[[", 1:model$d, "]]", sep = "", collapse = ","),
+  #                                  ")", sep = ""))
+  # hfunBigInvGamma <- parse(text = paste("bdiag(",
+  #                                       paste("invGamma[[", 1:model$d, "]]", sep = "", collapse = ","),
+  #                                       ")", sep = ""))
+  # bigPhi <- eval(hfunBigPhi)
+  # bigInvGamma <- eval(hfunBigInvGamma)
+  # GammaPhitPhi <- bigInvGamma + t(bigPhi)%*%bigPhi/varnoise
+  # invGammaPhitPhi <- chol2inv(chol(GammaPhitPhi))
+  # invPhiGammaPhitFull <- (diag(length(model$y)) - bigPhi%*%invGammaPhitPhi%*%t(bigPhi)/varnoise)/varnoise
+  # invKyy <- invPhiGammaPhitFull
+  # logDetKyy <- log(varnoise^(length(model$y)-nrow(bigInvGamma))) + sum(logDetGamma) +
+  #   log(det(as.matrix(GammaPhitPhi)))
   
   f <- 0.5*(logDetKyy + nrow(invKyy)*log(2*pi) + t(model$y)%*%invKyy%*%model$y)
   return(f)
@@ -618,12 +637,12 @@ logLikAdditiveFun <- function(par = unlist(purrr::map(model$kernParam, "par")),
 #' @export
 logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")), 
                                model,  parfixed = rep(FALSE, model$d*length(par)),
-                               mcmc.opts = list(probe = "Genz", nb.mcmc = 1e3),
+                               mcmc.opts = NULL,
                                estim.varnoise = FALSE) {
   m <- model$localParam$m
   u <- Gamma <- vector("list", model$d)
   Phi <- vector("list", model$d)
-  logDetGamma <- rep(0, model$d)
+  # logDetGamma <- rep(0, model$d)
   invGamma <- vector("list", model$d)
   
   for (j in 1:model$d)
@@ -632,6 +651,8 @@ logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")),
   if (estim.varnoise) {
     varnoise <- par[length(par)]
     par <- par[-length(par)]
+  } else {
+    varnoise <- model$varnoise
   }
   
   # computing the kernel matrix for the prior
@@ -641,10 +662,8 @@ logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")),
     Phi[[k]] <- basisCompute.lineqGP(model$x[, k], u[[k]])
     cholGamma <- chol(Gamma[[k]])
     invGamma[[k]] <- chol2inv(cholGamma)
-    logDetGamma[k] <- 2*sum(diag(log(cholGamma)))
   }
   
-  # GammaFull <- Gamma[[1]]
   # GammaPhitList <- vector("list", model$d)
   # GammaPhitList[[1]] <- Gamma[[1]] %*% t(Phi[[1]])
   # GammaPhitFull <- GammaPhitList[[1]]
@@ -658,9 +677,8 @@ logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")),
   #   PhiGammaPhitFull <- PhiGammaPhitFull + varnoise*diag(nrow(PhiGammaPhitFull))
   # Kyy <- PhiGammaPhitFull
   # cholKyy <- chol(PhiGammaPhitFull + model$nugget*diag(nrow(Kyy)))
-  # logDetKyy <- 2*sum(diag(log(cholKyy)))
   # invKyy <- chol2inv(cholKyy)
-  
+
   hfunBigPhi <- parse(text = paste("cbind(",
                                    paste("Phi[[", 1:model$d, "]]", sep = "", collapse = ","),
                                    ")", sep = ""))
@@ -673,9 +691,7 @@ logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")),
   invGammaPhitPhi <- chol2inv(chol(GammaPhitPhi))
   invPhiGammaPhitFull <- (diag(length(model$y)) - bigPhi%*%invGammaPhitPhi%*%t(bigPhi))/varnoise
   invKyy <- invPhiGammaPhitFull
-  logDetKyy <- log(varnoise^(length(model$y)-nrow(bigInvGamma))) + sum(logDetGamma) +
-    log(det(as.matrix(GammaPhitPhi)))
-  
+
   gradKyyTemp <- c()
   idx_iter <- seq(length(par))
   idx_iter <- idx_iter[parfixed == FALSE]
@@ -684,7 +700,7 @@ logLikAdditiveGrad <- function(par = unlist(purrr::map(model$kernParam, "par")),
   cteTermLik <- invKyy - alpha%*%t(alpha)
   gradf <- rep(0, length(par))
   for (k in 1:model$d) {
-    gradGammaSigma2 <- Gamma[[k]]/par[(k-1)*length(model$kernParam[[k]]$par) + 1]
+    gradGammaSigma2 <- attr(Gamma[[k]], 'gradient')[[1]]
     gradKyySigma2 <- Phi[[k]] %*% gradGammaSigma2 %*% t(Phi[[k]])
     gradf[(k-1)*length(model$kernParam[[k]]$par) + 1] <- 0.5*sum(diag(cteTermLik %*% gradKyySigma2))
     

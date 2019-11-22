@@ -4,8 +4,13 @@
 \alias{logLikGrad}
 \title{Gradient of the Log-Likelihood of a Gaussian Process.}
 \usage{
-logLikGrad(par = model$kernParam$par, model, parfixed = rep(FALSE,
-  length(par)), mcmc.opts = NULL, estim.varnoise = FALSE)
+logLikGrad(
+  par = model$kernParam$par,
+  model,
+  parfixed = rep(FALSE, length(par)),
+  mcmc.opts = NULL,
+  estim.varnoise = FALSE
+)
 }
 \arguments{
 \item{par}{the values of the covariance parameters.}

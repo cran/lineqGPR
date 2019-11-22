@@ -4,8 +4,13 @@
 \alias{errorMeasureRegressMC}
 \title{Error Measures for GP Models using Monte Carlo Samples.}
 \usage{
-errorMeasureRegressMC(y, ytest, ysamples, type = "all",
-  control = list(probs = c(0.05, 0.95)))
+errorMeasureRegressMC(
+  y,
+  ytest,
+  ysamples,
+  type = "all",
+  control = list(probs = c(0.05, 0.95))
+)
 }
 \arguments{
 \item{y}{a vector with the output observations used for training.}

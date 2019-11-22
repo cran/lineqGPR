@@ -4,9 +4,13 @@
 \alias{constrlogLikGrad}
 \title{Numerical Gradient of the Log-Constrained-Likelihood of a Gaussian Process.}
 \usage{
-constrlogLikGrad(par = model$kernParam$par, model,
-  parfixed = rep(FALSE, length(par)), mcmc.opts = list(probe = "Genz",
-  nb.mcmc = 1000), estim.varnoise = FALSE)
+constrlogLikGrad(
+  par = model$kernParam$par,
+  model,
+  parfixed = rep(FALSE, length(par)),
+  mcmc.opts = list(probe = "Genz", nb.mcmc = 1000),
+  estim.varnoise = FALSE
+)
 }
 \arguments{
 \item{par}{the values of the covariance parameters.}

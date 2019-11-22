@@ -44,8 +44,7 @@ Maatouk, H. and Bay, X. (2017),
 \href{https://link.springer.com/article/10.1007/s11004-017-9673-2}{[link]}
 }
 \seealso{
-\code{\link{tmvrnorm.Gibbs}},
-         \code{\link{tmvrnorm.HMC}}, \code{\link{tmvrnorm.ExpT}}
+\code{\link{tmvrnorm.HMC}}, \code{\link{tmvrnorm.ExpT}}
 }
 \author{
 A. F. Lopez-Lopera.

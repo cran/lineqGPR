@@ -10,11 +10,12 @@
 }
 \description{
 
-  Package for Gaussian process interpolation, regression and simulation
-  under linear inequality constraints based on (López-Lopera et al., 2017).
-  The constrained models are given as objects with "lineqGP" S3 class.
-  Implementations according to (Maatouk and Bay, 2017) are also provided
-  as objects with "lineqDGP" S3 class.
+  A package for Gaussian process interpolation, regression and simulation
+  under linear inequality constraints based on (López-Lopera et al., 2018).
+  Constrained models and constrained additive models are given as objects
+  with "lineqGP" and "lineqAGP" S3 class, respectively. Implementations
+  according to (Maatouk and Bay, 2017) are also provided as objects with
+  "lineqDGP" S3 class.
 
 }
 
@@ -30,6 +31,7 @@
   \tab \bold{Important functions or methods} \cr \cr
   \code{create} \tab Creation function of GP models under linear inequality constraints. \cr
   \code{augment} \tab Augmentation of GP models according to local and covariance parameters. \cr
+  \code{lineqGPOptim} \tab Covariance parameter estimation via maximum likelihood. \cr
   \code{predict} \tab Prediction of the objective function at new points using a Kriging model under \cr
   \tab linear inequality constraints. \cr
   \code{simulate} \tab Simulation of kriging models under linear inequality constraints. \cr
@@ -53,9 +55,9 @@
 
 \author{
 
-  Andrés Felipe López-Lopera (Mines Saint-Étienne)
+  Andrés Felipe López-Lopera (IMT, Toulouse)
   with contributions from
-  Olivier Roustant (Mines Saint-Étienne) and
+  Olivier Roustant (INSA, Toulouse) and
   Yves Deville (Alpestat).
 
   Maintainer: Andrés Felipe López-Lopera, <andres-felipe.lopez@emse.fr>
@@ -63,15 +65,15 @@
 }
 \references{
 
-  López-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2017),
+  López-Lopera, A. F., Bachoc, F., Durrande, N., and Roustant, O. (2018),
   "Finite-dimensional Gaussian approximation with linear inequality constraints".
-  \emph{ArXiv e-prints}
-  \href{https://arxiv.org/abs/1710.07453}{[link]}
+  \emph{SIAM/ASA Journal on Uncertainty Quantification}, 6(3): 1224–1255.
+  \href{https://doi.org/10.1137/17M1153157}{[link]}
 
-  Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2018),
+  Bachoc, F., Lagnoux, A., and Lopez-Lopera, A. F. (2019),
   "Maximum likelihood estimation for Gaussian processes under inequality constraints".
-  \emph{ArXiv e-prints}
-  \href{https://arxiv.org/abs/1804.03378}{[link]}
+  \emph{Electronic Journal of Statistics}, 13 (2): 2921-2969.
+  \href{https://doi.org/10.1214/19-EJS1587}{[link]}
 
   Maatouk, H. and Bay, X. (2017),
   "Gaussian process emulators for computer experiments with inequality constraints".
@@ -102,7 +104,7 @@ DoE <- splitDoE(x, y, DoE.idx = c(201, 501, 801))
 
 #### GP with inactive boundedness constraints ####
 # creating the "lineqGP" model
-model <- create(class = "lineqGP", DoE$xdesign, DoE$ydesign,
+model <- create(class = "lineqGP", x = DoE$xdesign, y = DoE$ydesign,
                 constrType = c("boundedness"))
 model$localParam$m <- 100
 model$bounds <- c(-10,10)
@@ -119,7 +121,7 @@ legend("topleft", c("ytrain","ytest","mean","confidence"),
 
 #### GP with active boundedness constraints ####
 # creating the "lineqGP" model
-model <- create(class = "lineqGP", DoE$xdesign, DoE$ydesign,
+model <- create(class = "lineqGP", x = DoE$xdesign, y = DoE$ydesign,
                 constrType = c("boundedness"))
 model$localParam$m <- 100
 model$bounds <- c(0,1)
@@ -149,7 +151,7 @@ DoE <- splitDoE(x, y, DoE.idx = c(201, 501, 801))
 
 #### GP with boundedness and monotonicity constraints ####
 # creating the "lineqGP" model
-model <- create(class = "lineqGP", DoE$xdesign, DoE$ydesign,
+model <- create(class = "lineqGP", x = DoE$xdesign, y = DoE$ydesign,
                 constrType = c("boundedness","monotonicity"))
 model$localParam$m <- 50
 model$bounds[1, ] <- c(0,1)
@@ -184,7 +186,7 @@ DoE <- splitDoE(x, y, DoE.idx = c(101, 301, 501, 701))
 
 #### GP with predefined linear inequality constraints ####
 # creating the "lineqGP" model
-model <- create(class = "lineqGP", DoE$xdesign, DoE$ydesign,
+model <- create(class = "lineqGP", x = DoE$xdesign, y = DoE$ydesign,
                 constrType = c("linear"))
 m <- model$localParam$m <- 100
 

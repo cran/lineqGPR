@@ -44,8 +44,7 @@ Botev, Z. I. (2017),
 \href{https://rss.onlinelibrary.wiley.com/doi/pdf/10.1111/rssb.12162}{[link]}
 }
 \seealso{
-\code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.Gibbs}},
-         \code{\link{tmvrnorm.HMC}}
+\code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.HMC}}
 }
 \author{
 A. F. Lopez-Lopera.

@@ -24,8 +24,8 @@ Monte Carlo samplers for truncated multivariate normal distributions.
 The function invokes particular samplers which depend on the class of the first argument.
 }
 \seealso{
-\code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.Gibbs}},
-         \code{\link{tmvrnorm.HMC}}, \code{\link{tmvrnorm.ExpT}}
+\code{\link{tmvrnorm.RSM}}, \code{\link{tmvrnorm.HMC}}, 
+         \code{\link{tmvrnorm.ExpT}}
 }
 \author{
 A. F. Lopez-Lopera.

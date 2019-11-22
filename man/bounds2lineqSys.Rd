@@ -4,8 +4,14 @@
 \alias{bounds2lineqSys}
 \title{Linear Systems of Inequalities}
 \usage{
-bounds2lineqSys(d = nrow(A), l = 0, u = 1, A = diag(d),
-  lineqSysType = "twosides", rmInf = TRUE)
+bounds2lineqSys(
+  d = nrow(A),
+  l = 0,
+  u = 1,
+  A = diag(d),
+  lineqSysType = "twosides",
+  rmInf = TRUE
+)
 }
 \arguments{
 \item{d}{the number of linear inequality constraints.}

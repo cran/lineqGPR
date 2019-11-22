@@ -4,8 +4,13 @@
 \alias{logLikAdditiveFun}
 \title{Log-Likelihood of a Additive Gaussian Process.}
 \usage{
-logLikAdditiveFun(par = unlist(purrr::map(model$kernParam, "par")),
-  model, parfixed = NULL, mcmc.opts = NULL, estim.varnoise = FALSE)
+logLikAdditiveFun(
+  par = unlist(purrr::map(model$kernParam, "par")),
+  model,
+  parfixed = NULL,
+  mcmc.opts = NULL,
+  estim.varnoise = FALSE
+)
 }
 \arguments{
 \item{par}{the values of the covariance parameters.}

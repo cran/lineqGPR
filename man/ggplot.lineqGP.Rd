@@ -4,10 +4,25 @@
 \alias{ggplot.lineqGP}
 \title{GGPlot for the \code{"lineqGP"} S3 Class}
 \usage{
-\method{ggplot}{lineqGP}(data, mapping, ytest = NULL, probs = c(0.05,
-  0.95), bounds = NULL, addlines = TRUE, nblines = 5,
-  fillbackground = TRUE, alpha.qtls = 0.4, xlab = "", ylab = "",
-  main = "", xlim = NULL, ylim = NULL, lwd = 1, cex = 1.5, ...)
+\method{ggplot}{lineqGP}(
+  data,
+  mapping,
+  ytest = NULL,
+  probs = c(0.05, 0.95),
+  bounds = NULL,
+  addlines = TRUE,
+  nblines = 5,
+  fillbackground = TRUE,
+  alpha.qtls = 0.4,
+  xlab = "",
+  ylab = "",
+  main = "",
+  xlim = NULL,
+  ylim = NULL,
+  lwd = 1,
+  cex = 1.5,
+  ...
+)
 }
 \arguments{
 \item{data}{an object with \code{"lineqGP"} S3 class.}
